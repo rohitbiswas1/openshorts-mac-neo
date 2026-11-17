@@ -14,7 +14,7 @@ This profile is for an Apple Silicon Mac with 8 GB of unified memory. OpenShorts
 | Timeline render, if used | Mac, Remotion/Chromium | Memory and CPU |
 | AI Shorts and voiceover, if used | fal.ai / ElevenLabs | API quota/cost |
 
-The Mac profile limits the backend to one job and one clip worker. It caps high frame rate sources at about 30 fps before the later passes, and renders vertical clips at 720 × 1280 instead of the default 1080 × 1920. That is about 56% fewer output pixels per frame. The `veryfast` x264 preset reduces encoder work but can make files larger. The editor stays available. These choices reduce CPU work and peak load, with some possible loss of transcription, scene-boundary, and video detail. Total battery savings depend on the source and the Mac; they need a real-device measurement.
+The Mac profile limits the backend to one job and one clip worker. It caps high frame rate sources at about 30 fps before the later passes, and renders vertical clips at 720 × 1280 instead of the default 1080 × 1920. That is about 56% fewer output pixels per frame. The `veryfast` x264 preset reduces encoder work but can make files larger. The dashboard is built once and served by nginx, so no development file watcher stays active. The editor stays available. These choices reduce CPU work and peak load, with some possible loss of transcription, scene-boundary, and video detail. Total battery savings depend on the source and the Mac; they need a real-device measurement.
 
 ## Start
 
