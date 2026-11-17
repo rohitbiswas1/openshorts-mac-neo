@@ -85,5 +85,18 @@ def test_only_free_jobs_get_the_cap(monkeypatch):
     assert "CUT_MAX_FPS" not in env
 
 
+def test_self_host_can_cap_frame_rate_without_changing_cloud_paid_jobs(monkeypatch):
+    import app
+    monkeypatch.setenv("SELF_HOST_MAX_FPS", "30")
+    monkeypatch.setattr(app, "BILLING_ENABLED", False)
+    local = {}
+    app._apply_rate_cap(local)
+    assert local["CUT_MAX_FPS"] == "30"
+    monkeypatch.setattr(app, "BILLING_ENABLED", True)
+    paid = {}
+    app._apply_rate_cap(paid)
+    assert "CUT_MAX_FPS" not in paid
+
+
 def test_the_cap_travels_to_the_remote_worker():
     assert remote_worker.allowed_option("CUT_MAX_FPS", "30")

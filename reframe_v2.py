@@ -39,9 +39,16 @@ ANALYSIS_MAX_WIDTH = 640
 # upload; anything smaller is treated as low quality and re-encoded from the
 # already-soft source. The crop region is whatever the source height allows, so
 # a 720p input yields a 406x720 crop — we scale that up to the delivery floor
-# rather than shipping sub-HD. Sources that already exceed it are left alone
-# (never downscale quality the user supplied).
+# rather than shipping sub-HD. By default, larger sources are left alone.
+# Small self-hosted machines may opt in to a lower floor and an output ceiling.
 DELIVERY_MIN_WIDTH = 1080
+
+
+def _delivery_width(name, default):
+    try:
+        return max(0, int(os.environ.get(name, default)))
+    except ValueError:
+        return default
 
 
 # --- pure helpers (CI-testable) --------------------------------------------
@@ -49,9 +56,9 @@ DELIVERY_MIN_WIDTH = 1080
 def delivery_size(orig_w, orig_h, aspect_ratio):
     """Output (width, height) for a reframe of this source.
 
-    Picks the largest crop the source allows, then upscales to
-    ``DELIVERY_MIN_WIDTH`` if that crop is narrower. Both dimensions come back
-    even (x264/NVENC reject odd ones).
+    Picks the largest crop the source allows, then applies the configured
+    delivery width floor and optional ceiling. Both dimensions come back even
+    (x264/NVENC reject odd ones).
     """
     out_h = orig_h
     out_w = int(out_h * aspect_ratio)
@@ -59,8 +66,13 @@ def delivery_size(orig_w, orig_h, aspect_ratio):
         out_w = orig_w
         out_h = int(out_w / aspect_ratio)
 
-    if out_w < DELIVERY_MIN_WIDTH:
-        out_w = DELIVERY_MIN_WIDTH
+    floor = _delivery_width("DELIVERY_MIN_WIDTH", DELIVERY_MIN_WIDTH)
+    ceiling = _delivery_width("DELIVERY_MAX_WIDTH", 0)
+    if out_w < floor:
+        out_w = floor
+        out_h = int(round(out_w / aspect_ratio))
+    if ceiling and out_w > ceiling:
+        out_w = ceiling
         out_h = int(round(out_w / aspect_ratio))
 
     return out_w + (out_w % 2), out_h + (out_h % 2)

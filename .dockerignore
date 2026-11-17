@@ -40,6 +40,11 @@ videos/
 
 # Runtime caches from the bind-mounted /app directory
 .cache/
+.npm-cache/
+.docker-config/
+.build-ca.crt
+dashboard/.build-ca.crt
+docker-compose.override.yml
 
 # Secrets — never bake real credentials into the image (repo is public,
 # image may be pushed to a registry). Runtime env comes via compose env_file.

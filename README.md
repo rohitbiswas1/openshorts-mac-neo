@@ -1,5 +1,7 @@
 # OpenShorts.app
 
+> **MacBook Neo fork:** Based on [mutonby/openshorts](https://github.com/mutonby/openshorts). For an 8 GB Apple Silicon Mac, use the [Mac setup guide](docs/macbook-neo.md) and `compose.mac.yaml`. The original project and hosted service belong to the upstream authors.
+
 **The open-source OpusClip alternative.** Turn long videos into viral 9:16 Shorts, TikToks and Reels. Self-host free (MIT) or use the hosted cloud.
 
 | | OpenShorts | OpusClip | Vizard | Klap |
@@ -208,6 +210,8 @@ Self-hosting OpenShorts is free. You provide the machine and you only pay for th
 ---
 
 ## Getting Started
+
+**MacBook Neo / 8 GB Apple Silicon:** use the [Mac profile and setup guide](docs/macbook-neo.md) for lower memory use instead of the default Compose command below.
 
 ### 1. Clone
 ```bash

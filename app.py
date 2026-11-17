@@ -2413,10 +2413,11 @@ def _resume_candidates(held: set, now: float):
     return keep_reservations, picked
 
 
-# Free-plan jobs render at up to FREE_MAX_FPS (0 = source rate): the cut that
+# Free-plan jobs render at up to FREE_MAX_FPS (0 = source rate). Self-hosted
+# installs can opt in to the same saving with SELF_HOST_MAX_FPS. The cut that
 # every later pass reads is made at that rate (ffmpeg_utils.cut_rate_filter),
-# so a 60 fps source costs about half the decoder and encoder time. Paid plans
-# keep the source's rate.
+# so a 60 fps source costs about half the decoder and encoder time. Cloud paid
+# plans keep the source's rate.
 def _free_max_fps() -> int:
     try:
         return max(0, int(os.environ.get("FREE_MAX_FPS", "30")))
@@ -2425,7 +2426,15 @@ def _free_max_fps() -> int:
 
 
 def _apply_rate_cap(env) -> None:
-    cap = _free_max_fps() if env.get("WATERMARK") == "1" else 0
+    if env.get("WATERMARK") == "1":
+        cap = _free_max_fps()
+    elif not BILLING_ENABLED:
+        try:
+            cap = max(0, int(os.environ.get("SELF_HOST_MAX_FPS", "0")))
+        except ValueError:
+            cap = 0
+    else:
+        cap = 0
     if cap:
         env["CUT_MAX_FPS"] = str(cap)
     else:

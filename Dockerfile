@@ -19,9 +19,14 @@ RUN pip install --no-cache-dir pip==26.3
 # will ever use a GPU. CPU builds take the same versions from PyTorch's CPU
 # index first (keep the two pins in step with requirements.txt).
 ARG GPU=0
+ARG TARGETARCH
 RUN if [ "$GPU" != "1" ]; then \
-      pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
-        torch==2.11.0 torchvision==0.26.0; \
+      if [ "$TARGETARCH" = "arm64" ]; then \
+        pip install --no-cache-dir --no-deps torch==2.11.0 torchvision==0.26.0; \
+      else \
+        pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
+          torch==2.11.0 torchvision==0.26.0; \
+      fi; \
     fi
 # Every other Python package comes from a full lock (direct and transitive
 # deps at exact versions) installed with --no-deps, so nothing unpinned gets
@@ -49,6 +54,7 @@ RUN if [ "$GPU" = "1" ]; then LOCK=requirements-gpu.lock; else LOCK=requirements
     fi \
  && pip check \
  && pip install --no-index --no-deps -q -r requirements.txt -r requirements-billing.txt
+RUN pip install --upgrade --pre --no-cache-dir "yt-dlp[default]" bgutil-ytdlp-pot-provider
 
 # osrender (osrender/, Rust): renders a reframed clip in one pass on the GPU
 # (gpu_render.py). Only GPU builds compile it; the CPU image ships without it
@@ -109,8 +115,6 @@ RUN git clone --depth 1 https://github.com/Brainicism/bgutil-ytdlp-pot-provider 
     && npm cache clean --force
 ENV BGUTIL_SCRIPT_PATH=/opt/bgutil-provider/server/build/generate_once.js
 
-# Copy virtual env from builder
-COPY --from=builder /opt/venv /opt/venv
 # Empty on CPU builds.
 COPY --from=osrender /out/ /usr/local/bin/
 ENV PATH="/opt/venv/bin:$PATH"
@@ -122,9 +126,6 @@ ENV PYTHONUNBUFFERED=1
 # runtime for compute (CUDA) + video (NVENC) driver libs.
 ENV LD_LIBRARY_PATH=/opt/venv/lib/python3.11/site-packages/nvidia/cublas/lib:/opt/venv/lib/python3.11/site-packages/nvidia/cudnn/lib:/opt/venv/lib/python3.11/site-packages/nvidia/cuda_runtime/lib:/opt/venv/lib/python3.11/site-packages/nvidia/cu13/lib
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
-
-# Latest yt-dlp (nightly — it updates frequently) plus its helper plugin.
-RUN pip install --upgrade --pre --no-cache-dir "yt-dlp[default]" bgutil-ytdlp-pot-provider
 
 # Copy application code
 COPY . .
@@ -155,8 +156,8 @@ RUN chown -R appuser:appuser /app /tmp/Ultralytics
 # Switch to non-root user
 USER appuser
 
-# Pre-download YOLO model on build (now running as appuser)
-RUN python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
+# Add the large Python environment last so later build steps do not copy it.
+COPY --from=builder /opt/venv /opt/venv
 
 # Expose FastAPI port
 EXPOSE 8000

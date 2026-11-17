@@ -32,6 +32,10 @@ output/
 
 # Cache dirs
 .cache/
+.npm-cache/
+.docker-config/
+.build-ca.crt
+docker-compose.override.yml
 .config/
 # Multi-agent Skills
 .agents/

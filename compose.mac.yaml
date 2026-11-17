@@ -1,0 +1,57 @@
+# Apple Silicon / 8 GB Mac profile. Use this file explicitly; the default
+# compose file bind-mounts the source tree and runs several jobs in parallel.
+services:
+  backend:
+    build:
+      context: .
+      args:
+        GPU: "0"
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      MAX_CONCURRENT_JOBS: "1"
+      CLIP_WORKERS: "1"
+      WHISPER_MODEL: "base"
+      WHISPER_DEVICE: "cpu"
+      WHISPER_COMPUTE: "int8"
+      SCENE_ENGINE: "pyscenedetect"
+      SELF_HOST_MAX_FPS: "30"
+      DELIVERY_MIN_WIDTH: "720"
+      DELIVERY_MAX_WIDTH: "720"
+      X264_PRESET: "veryfast"
+      FFMPEG_THREADS: "2"
+      OUTPUT_MAX_GB: "10"
+      UPLOADS_MAX_GB: "5"
+      SOURCE_CACHE_MAX_GB: "5"
+      HF_HOME: /app/.cache/huggingface
+    volumes:
+      - output:/app/output
+      - uploads:/app/uploads
+      - model_cache:/app/.cache/huggingface
+
+  frontend:
+    build:
+      context: ./dashboard
+      target: dev
+    ports:
+      - "127.0.0.1:5175:5173"
+    depends_on:
+      - backend
+
+  renderer:
+    build:
+      context: .
+      dockerfile: render-service/Dockerfile
+    environment:
+      REMOTION_BUNDLE_PATH: /app/remotion
+      OUTPUT_DIR: /output
+      PORT: "3100"
+    volumes:
+      - output:/output
+    depends_on:
+      - backend
+
+volumes:
+  output:
+  uploads:
+  model_cache:

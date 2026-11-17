@@ -51,6 +51,12 @@ class TestDeliverySize:
     def test_720p_source_is_upscaled_to_the_delivery_floor(self):
         assert delivery_size(1280, 720, VERTICAL) == (1080, 1920)
 
+    def test_small_machine_can_cap_output_pixels(self, monkeypatch):
+        monkeypatch.setenv("DELIVERY_MIN_WIDTH", "720")
+        monkeypatch.setenv("DELIVERY_MAX_WIDTH", "720")
+        assert delivery_size(1280, 720, VERTICAL) == (720, 1280)
+        assert delivery_size(3840, 2160, VERTICAL) == (720, 1280)
+
     def test_1080p_source_lands_on_the_floor_exactly(self):
         assert delivery_size(1920, 1080, VERTICAL) == (1080, 1920)
 

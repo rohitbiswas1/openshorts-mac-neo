@@ -91,10 +91,17 @@ OUTPUT — RETURN ONLY VALID JSON (no markdown, no comments). Order clips by pre
 }}
 """
 
-# Load the YOLO model once (Keep for backup or scene analysis if needed)
-# YOLO_MODEL_PATH lets deployments point at a pre-downloaded weights file so a
-# volume mounted over the workdir doesn't trigger a re-download at startup.
-model = YOLO(os.environ.get("YOLO_MODEL_PATH", "yolov8n.pt"))
+# YOLO is only the fallback when face detection finds no subject. Loading it
+# for every job wastes memory on sources that never need that fallback.
+model = None
+
+
+def _get_yolo_model():
+    global model
+    if model is None:
+        # Called under DETECT_LOCK, which also serializes inference.
+        model = YOLO(os.environ.get("YOLO_MODEL_PATH", "yolov8n.pt"))
+    return model
 
 # --- MediaPipe Setup ---
 # Use standard Face Detection (BlazeFace) for speed
@@ -474,9 +481,9 @@ def detect_person_yolo(frame):
     ORIGINAL frame coordinates (inference runs on a downscaled copy).
     """
     small, scale = _detection_frame(frame)
-    # Use the globally loaded model
+    # Load the fallback only if face detection actually needs it.
     with DETECT_LOCK:
-        results = model(small, verbose=False, classes=[0]) # class 0 is person
+        results = _get_yolo_model()(small, verbose=False, classes=[0]) # class 0 is person
 
     if not results:
         return None
